@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: credify-marketplace
+    env: node
+    buildCommand: bun install && bun run build
+    startCommand: node server.js
+    plan: free
