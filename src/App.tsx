@@ -6,10 +6,10 @@ import { CartProvider } from "@/contexts/CartContext";
 import { CartSheet } from "@/components/ShoppingCart";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { HomePage } from "@/pages/HomePage";
 import { MarketplacePage } from "@/pages/MarketplacePage";
 import { SellerDashboard } from "@/pages/SellerDashboard";
-// import { AdminLogin } from "@/pages/AdminLogin";
 import { AdminDashboard } from "@/pages/AdminDashboard";
 import { VendorRegistration } from "@/pages/VendorRegistration";
 import { OrderTracking } from "@/pages/OrderTracking";
@@ -30,8 +30,7 @@ export default function App() {
         search.includes('admin-secure') ||
         path.includes('admin-secure')
       ) {
-        // Redirect to admin login and clear the secret URL
-        window.history.replaceState({}, '', window.location.origin + '/admin-login');
+        window.history.replaceState({}, '', '/admin-login');
       }
     };
 
@@ -42,24 +41,25 @@ export default function App() {
     <AvalancheProvider>
       <ConcordiumProvider>
         <CartProvider>
-          <div className="relative">
-            <Navigation />
-            <div className="fixed bottom-4 right-4 z-50">
-              <CartSheet />
+          <ErrorBoundary>
+            <div className="relative">
+              <Navigation />
+              <div className="fixed bottom-4 right-4 z-50">
+                <CartSheet />
+              </div>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/seller" element={<SellerDashboard />} />
+                <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                <Route path="/vendor-registration" element={<VendorRegistration />} />
+                <Route path="/order-tracking" element={<OrderTracking />} />
+                <Route path="/credify-admin-secure" element={<Navigate to="/admin-login" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+              <Footer />
             </div>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/marketplace" element={<MarketplacePage />} />
-              <Route path="/seller" element={<SellerDashboard />} />
-              {/* <Route path="/admin-login" element={<AdminLogin />} /> */}
-              <Route path="/admin-dashboard" element={<AdminDashboard />} />
-              <Route path="/vendor-registration" element={<VendorRegistration />} />
-              <Route path="/order-tracking" element={<OrderTracking />} />
-              <Route path="/credify-admin-secure" element={<Navigate to="/admin-login" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            <Footer />
-          </div>
+          </ErrorBoundary>
         </CartProvider>
       </ConcordiumProvider>
     </AvalancheProvider>

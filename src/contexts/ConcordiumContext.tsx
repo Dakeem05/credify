@@ -71,7 +71,7 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const provider = await detectConcordiumProvider(3000); // 3 second timeout
+        const provider = await detectConcordiumProvider(5000); // Increased timeout to 5s
         console.log('Concordium Browser Wallet provider detected:', provider);
 
         const chainHash = await provider.getSelectedChain();
@@ -81,6 +81,13 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
 
         if (!isMainnet) {
           setState(prev => ({ ...prev, error: 'Please switch to Concordium Mainnet in your wallet.' }));
+        }
+
+        // Check if already connected
+        const account = await provider.getMostRecentlyUsedAccount();
+        if (account) {
+          setState(prev => ({ ...prev, account, isConnected: true }));
+          console.log('Auto-connected to account:', account);
         }
       } catch (error: any) {
         console.error('Failed to initialize Concordium provider:', error);
@@ -92,6 +99,13 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
     };
 
     initProvider();
+
+    // Cleanup event listeners on unmount
+    return () => {
+      if (state.provider) {
+        state.provider.removeAllListeners();
+      }
+    };
   }, []);
 
   // Generate a random hex challenge (32 bytes)
@@ -101,15 +115,16 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
   };
 
   const connect = async () => {
+    console.log('Starting wallet connection');
     setState(prev => ({ ...prev, isConnecting: true, error: null }));
 
     let provider = state.provider;
 
     if (!provider) {
       try {
-        console.log('Attempting to detect provider on connect');
-        provider = await detectConcordiumProvider(3000);
-        console.log('Concordium Browser Wallet provider detected on connect:', provider);
+        console.log('Detecting provider');
+        provider = await detectConcordiumProvider(5000); // Increased timeout
+        console.log('Provider detected:', provider);
 
         const chainHash = await provider.getSelectedChain();
         const isMainnet = chainHash === MAINNET_GENESIS_HASH;
@@ -125,7 +140,7 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
           return;
         }
       } catch (error: any) {
-        console.error('Failed to detect provider on connect:', error);
+        console.error('Failed to detect provider:', error);
         setState(prev => ({ 
           ...prev, 
           isConnecting: false, 
@@ -136,7 +151,9 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      console.log('Attempting to connect wallet');
       const account = await provider.connect();
+      console.log('Connection result:', account);
       if (account) {
         setState(prev => ({ ...prev, account, isConnected: true, isConnecting: false }));
         console.log('Connected to Concordium account:', account);
@@ -164,35 +181,36 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
 
   const handleAccountChange = async (account: string) => {
     try {
+      console.log('Account changed to:', account);
       const chainHash = await state.provider?.getSelectedChain();
       const isMainnet = chainHash === MAINNET_GENESIS_HASH;
       setState(prev => ({ ...prev, account, isConnected: true, isMainnet }));
-      console.log('Account changed to:', account);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error handling account change:', error);
       setState(prev => ({ ...prev, error: 'Failed to handle account change.' }));
     }
   };
 
   const handleAccountDisconnected = () => {
+    console.log('Account disconnected');
     setState(prev => ({
       ...prev,
       account: null,
       isConnected: false,
     }));
-    console.log('Account disconnected');
   };
 
   const handleChainChanged = async (chainHash: string) => {
+    console.log('Chain changed:', chainHash);
     const isMainnet = chainHash === MAINNET_GENESIS_HASH;
     setState(prev => ({ ...prev, isMainnet }));
     if (!isMainnet) {
       setState(prev => ({ ...prev, error: 'Please switch to Concordium Mainnet in your wallet.' }));
     }
-    console.log('Chain changed, isMainnet:', isMainnet);
   };
 
   const disconnect = () => {
+    console.log('Disconnecting wallet');
     if (state.provider) {
       state.provider.removeListener('accountChanged', handleAccountChange);
       state.provider.removeListener('accountDisconnected', handleAccountDisconnected);
@@ -209,8 +227,8 @@ export function ConcordiumProvider({ children }: { children: ReactNode }) {
     const initProvider = async () => {
       try {
         console.log('Re-initializing provider after disconnect');
-        const provider = await detectConcordiumProvider(3000);
-        console.log('Concordium Browser Wallet provider detected:', provider);
+        const provider = await detectConcordiumProvider(5000);
+        console.log('Provider detected:', provider);
 
         const chainHash = await provider.getSelectedChain();
         const isMainnet = chainHash === MAINNET_GENESIS_HASH;
